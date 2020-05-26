@@ -1,0 +1,46 @@
+{
+  "name": "mediatis/form_fieldnames",
+  "type": "typo3-cms-extension",
+  "description": "Mediatis Form Field Names",
+  "license": "GPL-2.0+",
+  "keywords": [
+    "TYPO3",
+    "extension",
+    "form",
+    "field",
+    "name"
+  ],
+  "homepage": "https://www.mediatis.de",
+  "authors": [
+    {
+      "name": "Michael Vöhringer",
+      "role": "Developer"
+    },
+    {
+      "name": "Meelis Karulin",
+      "role": "Developer"
+    },
+    {
+      "name": "Damian Ickler",
+      "role": "Developer"
+    },
+    {
+      "name": "Stephan Ude",
+      "role": "Developer"
+    }
+  ],
+  "require": {
+    "php": "~7.0 || ~7.1  || ~7.2",
+    "typo3/cms-core": "^9.5 || ^10.4",
+    "typo3/cms-form": "^9.5 || ^10.4"
+  },
+  "autoload": {
+    "psr-4": {
+      "Mediatis\\FormFieldnames\\": "Classes"
+    }
+  },
+  "replace": {
+    "form_fieldnames": "self.version",
+    "typo3-ter/form_fieldnames": "self.version"
+  }
+}
