@@ -1,0 +1,40 @@
+TYPO3:
+  CMS:
+    Form:
+      prototypes:
+        standard:
+          formElementsDefinition:
+            Fieldset:
+              formEditor:
+                editors:
+                  # remove the name field for fieldsets
+                  207: null
+            GridRow:
+              formEditor:
+                editors:
+                  # remove the name field for grid rows
+                  207: null
+          finishersDefinition:
+            Formrelay:
+              formEditor:
+                iconIdentifier: 't3-form-icon-finisher'
+                label: 'Formrelay'
+                predefinedDefaults:
+                  options:
+                    setup: ''
+                    baseUploadPath: 'uploads/tx_formrelay/'
+      mixins:
+        formElementMixins:
+          FormElementMixin:
+            formEditor:
+              predefinedDefaults:
+                defaultValue: ''
+              editors:
+                # we insert the field between label and placeholder
+                207:
+                  identifier: 'name'
+                  templateName: 'Inspector-TextEditor'
+                  label: 'Name'
+                  propertyPath: 'properties.fluidAdditionalAttributes.name'
+                  propertyValidators:
+                    10: 'NotEmpty'
