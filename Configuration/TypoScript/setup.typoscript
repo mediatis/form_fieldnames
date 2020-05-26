@@ -1,8 +1,0 @@
-
-plugin.tx_form {
-    settings {
-        yamlConfigurations {
-            1522324493 = EXT:form_fieldnames/Configuration/Yaml/FormSetup.yaml
-        }
-    }
-}
