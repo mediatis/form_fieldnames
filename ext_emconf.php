@@ -1,5 +1,4 @@
 <?php
-
 $EM_CONF[$_EXTKEY] = [
     'title' => 'Form Field Names',
     'description' => 'Extends ext:form by adding the field "name" to all form fields.',
@@ -8,10 +7,10 @@ $EM_CONF[$_EXTKEY] = [
     'author_company' => 'Mediatis AG',
     'state' => 'stable',
     'internal' => '',
-    'uploadfolder' => '1',
+    'uploadfolder' => '0',
     'createDirs' => '',
     'clearCacheOnLoad' => 0,
-    'version' => '3.0.0',
+    'version' => '3.1.0',
     'constraints' => [
         'depends' => [
             'typo3' => '10.4.0-10.4.99',

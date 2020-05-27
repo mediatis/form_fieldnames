@@ -30,7 +30,7 @@
     }
   ],
   "require": {
-    "php": "~7.0 || ~7.1  || ~7.2",
+    "php": "^7.2",
     "typo3/cms-core": "^10.4",
     "typo3/cms-form": "^10.4"
   },
@@ -40,7 +40,6 @@
     }
   },
   "replace": {
-    "form_fieldnames": "self.version",
     "typo3-ter/form_fieldnames": "self.version"
   }
 }
