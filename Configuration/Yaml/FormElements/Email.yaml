@@ -14,3 +14,4 @@ TYPO3:
                     propertyPath: properties.fluidAdditionalAttributes.name
                     propertyValidators:
                       10: NotEmpty
+                      20: Unique
