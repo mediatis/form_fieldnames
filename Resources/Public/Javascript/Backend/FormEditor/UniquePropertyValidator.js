@@ -23,24 +23,23 @@ define([], function () {
             getFormEditorApp().addPropertyValidationValidator('Unique', function(formElement, propertyPath) {
                 var id = formElement.get('identifier');
                 var value = formElement.get(propertyPath);
+                var foundElements = [];
                 function checkUniqueness(iterator) {
                     var propertyId = iterator.get('identifier');
                     var propertyValue = iterator.get(propertyPath);
                     if (id !== propertyId && propertyValue && propertyValue === value) {
-                        return false;
+                        foundElements.push(propertyId);
                     }
                     var renderables = iterator.get('renderables');
                     if (renderables) {
                         for (var i = 0; i < renderables.length; i++) {
-                            if (!checkUniqueness(renderables[i])) {
-                                return false;
-                            }
+                            checkUniqueness(renderables[i]);
                         }
                     }
-                    return true;
                 }
-                if (!checkUniqueness(getFormEditorApp().getRootFormElement())) {
-                    return 'Must be unique';
+                checkUniqueness(getFormEditorApp().getRootFormElement());
+                if (foundElements.length > 0) {
+                    return 'Must be unique (' + foundElements.join(', ') + ')';
                 }
             });
         }
