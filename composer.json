@@ -39,6 +39,11 @@
       "Mediatis\\FormFieldnames\\": "Classes"
     }
   },
+  "extra": {
+    "typo3/cms": {
+      "extension-key": "form_fieldnames"
+    }
+  },
   "replace": {
     "typo3-ter/form_fieldnames": "self.version"
   }
