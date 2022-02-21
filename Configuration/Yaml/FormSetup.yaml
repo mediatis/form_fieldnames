@@ -17,6 +17,7 @@ imports:
   - { resource: "./FormElements/DatePicker.yaml" }
   - { resource: "./FormElements/FileUpload.yaml" }
   - { resource: "./FormElements/ImageUpload.yaml" }
+  - { resource: "./FormElements/Countryselect.yaml" }
 
 TYPO3:
   CMS:
