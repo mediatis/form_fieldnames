@@ -1,66 +1,78 @@
-define([], function () {
-    'use strict';
+const {
+  bootstrap,
+} = factory();
 
-    return (function () {
+export {
+  bootstrap,
+};
 
-        /**
-         * @private
-         *
-         * @var object
-         */
-        var _formEditorApp = null;
+function factory() {
+  return (function() {
 
-        /**
-         * @private
-         *
-         * @return object
-         */
-        function getFormEditorApp() {
-            return _formEditorApp;
-        }
+    /**
+     * @private
+     *
+     * @var object
+     */
+    var _formEditorApp = null;
 
-        function _addPropertyValidators() {
-            getFormEditorApp().addPropertyValidationValidator('Unique', function(formElement, propertyPath) {
-                var id = formElement.get('identifier');
-                var value = formElement.get(propertyPath);
-                var foundElements = [];
-                function checkUniqueness(iterator) {
-                    var propertyId = iterator.get('identifier');
-                    var propertyValue = iterator.get(propertyPath);
-                    if (id !== propertyId && propertyValue && propertyValue === value) {
-                        foundElements.push(propertyId);
-                    }
-                    var renderables = iterator.get('renderables');
-                    if (renderables) {
-                        for (var i = 0; i < renderables.length; i++) {
-                            checkUniqueness(renderables[i]);
-                        }
-                    }
+    /**
+     * @private
+     *
+     * @return void
+     */
+    function _addPropertyValidators() {
+
+      getFormEditorApp().addPropertyValidationValidator('Unique', function(formElement, propertyPath) {
+        var id = formElement.get('identifier');
+        var value = formElement.get(propertyPath);
+        var foundElements = [];
+        function checkUniqueness(iterator) {
+            var propertyId = iterator.get('identifier');
+            var propertyValue = iterator.get(propertyPath);
+            if (id !== propertyId && propertyValue && propertyValue === value) {
+                foundElements.push(propertyId);
+            }
+            var renderables = iterator.get('renderables');
+            if (renderables) {
+                for (var i = 0; i < renderables.length; i++) {
+                    checkUniqueness(renderables[i]);
                 }
-                checkUniqueness(getFormEditorApp().getRootFormElement());
-                if (foundElements.length > 0) {
-                    return 'Must be unique (' + foundElements.join(', ') + ')';
-                }
-            });
+            }
         }
-
-        /**
-         * @public
-         *
-         * @param object formEditorApp
-         * @return void
-         */
-        function bootstrap(formEditorApp) {
-            _formEditorApp = formEditorApp;
-            _addPropertyValidators();
+        checkUniqueness(getFormEditorApp().getRootFormElement());
+        if (foundElements.length > 0) {
+            return 'Must be unique (' + foundElements.join(', ') + ')';
         }
+      });
+    };
 
-        /**
-         * Publish the public methods.
-         * Implements the "Revealing Module Pattern".
-         */
-        return {
-            bootstrap: bootstrap
-        };
-    })();
-});
+    /**
+     * @public
+     *
+     * @return object
+     */
+    function getFormEditorApp() {
+      return _formEditorApp;
+    };
+
+    /**
+     * @public
+     *
+     * @param object formEditorApp
+     * @return void
+     */
+    function bootstrap(formEditorApp) {
+      _formEditorApp = formEditorApp;
+      _addPropertyValidators();
+    };
+
+    /**
+     * Publish the public methods.
+     * Implements the "Revealing Module Pattern".
+     */
+    return {
+      bootstrap: bootstrap
+    };
+  })();
+}

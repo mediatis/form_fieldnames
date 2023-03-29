@@ -13,25 +13,15 @@
   "homepage": "https://www.mediatis.de",
   "authors": [
     {
-      "name": "Michael Vöhringer",
-      "role": "Developer"
-    },
-    {
-      "name": "Meelis Karulin",
-      "role": "Developer"
-    },
-    {
-      "name": "Damian Ickler",
-      "role": "Developer"
-    },
-    {
-      "name": "Stephan Ude",
+      "email": "info@mediatis.de",
+      "homepage": "https://www.mediatis.de",
+      "name": "Mediatis AG",
       "role": "Developer"
     }
   ],
   "require": {
-    "typo3/cms-core": "^10.4 || ^11.5",
-    "typo3/cms-form": "^10.4 || ^11.5"
+    "typo3/cms-core": "^12",
+    "typo3/cms-form": "^12"
   },
   "autoload": {
     "psr-4": {

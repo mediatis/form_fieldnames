@@ -25,6 +25,6 @@ TYPO3:
       prototypes:
         standard:
           formEditor:
-            dynamicRequireJsModules:
+            dynamicJavaScriptModules:
               additionalViewModelModules:
-                1592399877: '/typo3conf/ext/form_fieldnames/Resources/Public/Javascript/Backend/FormEditor/UniquePropertyValidator.js'
+                1592399877: '@mediatis/form_fieldnames/Backend/FormEditor/UniquePropertyValidator.js'

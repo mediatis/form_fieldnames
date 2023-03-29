@@ -1,5 +1,7 @@
 <?php
 
+use TYPO3\CMS\Core\Utility\ExtensionManagementUtility;
+
 defined('TYPO3') or die();
 
 call_user_func(function () {
@@ -18,5 +20,5 @@ plugin.tx_form {
         }
     }
 }';
-    \TYPO3\CMS\Core\Utility\ExtensionManagementUtility::addTypoScriptSetup($typoscript);
+    ExtensionManagementUtility::addTypoScriptSetup($typoscript);
 });
