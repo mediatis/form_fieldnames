@@ -5,13 +5,15 @@ declare(strict_types=1);
 namespace Mediatis\FormFieldnames\Tests\Unit\Service;
 
 use Mediatis\FormFieldnames\Dto\NameSource;
-use Mediatis\FormFieldnames\Tests\Unit\Fixtures\GeneratorFactory;
+use Mediatis\FormFieldnames\Tests\Unit\Fixtures\CreatesFieldNameGeneratorTrait;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
 use TYPO3\TestingFramework\Core\Unit\UnitTestCase;
 
 final class FieldNameGeneratorTest extends UnitTestCase
 {
+    use CreatesFieldNameGeneratorTrait;
+
     /**
      * @return array<string,array{0: string, 1: string}>
      */
@@ -33,7 +35,7 @@ final class FieldNameGeneratorTest extends UnitTestCase
     #[DataProvider('labelProvider')]
     public function labelIsReducedToSnakeCase(string $label, string $expected): void
     {
-        $generated = GeneratorFactory::create()->generate($label, 'text-1', []);
+        $generated = $this->createFieldNameGenerator()->generate($label, 'text-1', []);
 
         self::assertSame($expected, $generated->name);
         self::assertSame(NameSource::Label, $generated->source);
@@ -43,7 +45,7 @@ final class FieldNameGeneratorTest extends UnitTestCase
     #[Test]
     public function emptyLabelFallsBackToTheIdentifier(): void
     {
-        $generated = GeneratorFactory::create()->generate('', 'text-4', []);
+        $generated = $this->createFieldNameGenerator()->generate('', 'text-4', []);
 
         self::assertSame('text_4', $generated->name);
         self::assertSame(NameSource::Identifier, $generated->source);
@@ -52,7 +54,7 @@ final class FieldNameGeneratorTest extends UnitTestCase
     #[Test]
     public function labelWithoutUsableCharactersFallsBackToTheIdentifier(): void
     {
-        $generated = GeneratorFactory::create()->generate('!!! ???', 'email-1', []);
+        $generated = $this->createFieldNameGenerator()->generate('!!! ???', 'email-1', []);
 
         self::assertSame('email_1', $generated->name);
         self::assertSame(NameSource::Identifier, $generated->source);
@@ -61,7 +63,7 @@ final class FieldNameGeneratorTest extends UnitTestCase
     #[Test]
     public function unusableLabelAndIdentifierFallBackToAGenericName(): void
     {
-        $generated = GeneratorFactory::create()->generate('', '///', []);
+        $generated = $this->createFieldNameGenerator()->generate('', '///', []);
 
         self::assertSame('field', $generated->name);
         self::assertSame(NameSource::Identifier, $generated->source);
@@ -70,7 +72,7 @@ final class FieldNameGeneratorTest extends UnitTestCase
     #[Test]
     public function languageReferenceIsResolved(): void
     {
-        $generator = GeneratorFactory::create(['LLL:EXT:example/locallang.xlf:street' => 'Straße und Hausnummer']);
+        $generator = $this->createFieldNameGenerator(['LLL:EXT:example/locallang.xlf:street' => 'Straße und Hausnummer']);
 
         $generated = $generator->generate('LLL:EXT:example/locallang.xlf:street', 'text-1', []);
 
@@ -81,7 +83,7 @@ final class FieldNameGeneratorTest extends UnitTestCase
     #[Test]
     public function unresolvableLanguageReferenceFallsBackToTheIdentifier(): void
     {
-        $generated = GeneratorFactory::create()->generate('LLL:EXT:example/locallang.xlf:missing', 'text-7', []);
+        $generated = $this->createFieldNameGenerator()->generate('LLL:EXT:example/locallang.xlf:missing', 'text-7', []);
 
         self::assertSame('text_7', $generated->name);
         self::assertSame(NameSource::Identifier, $generated->source);
@@ -90,7 +92,7 @@ final class FieldNameGeneratorTest extends UnitTestCase
     #[Test]
     public function freeNameIsUsedUnchanged(): void
     {
-        $generated = GeneratorFactory::create()->generate('Vorname', 'text-1', ['nachname', 'email']);
+        $generated = $this->createFieldNameGenerator()->generate('Vorname', 'text-1', ['nachname', 'email']);
 
         self::assertSame('vorname', $generated->name);
         self::assertFalse($generated->suffixApplied);
@@ -99,7 +101,7 @@ final class FieldNameGeneratorTest extends UnitTestCase
     #[Test]
     public function takenNameGetsACounterStartingAtTwo(): void
     {
-        $generated = GeneratorFactory::create()->generate('Vorname', 'text-1', ['vorname']);
+        $generated = $this->createFieldNameGenerator()->generate('Vorname', 'text-1', ['vorname']);
 
         self::assertSame('vorname2', $generated->name);
         self::assertTrue($generated->suffixApplied);
@@ -108,7 +110,7 @@ final class FieldNameGeneratorTest extends UnitTestCase
     #[Test]
     public function counterSkipsNamesThatAreAlreadyTaken(): void
     {
-        $generated = GeneratorFactory::create()->generate('Vorname', 'text-1', ['vorname', 'vorname2']);
+        $generated = $this->createFieldNameGenerator()->generate('Vorname', 'text-1', ['vorname', 'vorname2']);
 
         self::assertSame('vorname3', $generated->name);
         self::assertTrue($generated->suffixApplied);
@@ -117,7 +119,7 @@ final class FieldNameGeneratorTest extends UnitTestCase
     #[Test]
     public function counterAlsoAppliesToTheIdentifierFallback(): void
     {
-        $generated = GeneratorFactory::create()->generate('', 'text-1', ['text_1']);
+        $generated = $this->createFieldNameGenerator()->generate('', 'text-1', ['text_1']);
 
         self::assertSame('text_12', $generated->name);
         self::assertSame(NameSource::Identifier, $generated->source);
@@ -127,6 +129,6 @@ final class FieldNameGeneratorTest extends UnitTestCase
     #[Test]
     public function sanitizeIsAvailableOnItsOwn(): void
     {
-        self::assertSame('ueber_uns', GeneratorFactory::create()->sanitize('Über uns'));
+        self::assertSame('ueber_uns', $this->createFieldNameGenerator()->sanitize('Über uns'));
     }
 }

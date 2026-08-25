@@ -63,6 +63,7 @@ class FormDefinitionService
         // v14+: listForms() requires a SearchCriteria and returns FormMetadata objects.
         // The class name is resolved through a variable so that older versions never
         // try to load a class that does not exist for them.
+        // @phpstan-ignore-next-line TYPO3 version switch — class only exists on v14+
         $searchCriteriaClass = SearchCriteria::class;
         // @phpstan-ignore-next-line TYPO3 version switch
         $searchCriteria = new $searchCriteriaClass();

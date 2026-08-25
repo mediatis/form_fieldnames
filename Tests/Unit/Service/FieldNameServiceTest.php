@@ -8,7 +8,7 @@ use Mediatis\FormFieldnames\Dto\FieldStatus;
 use Mediatis\FormFieldnames\Dto\FormSummary;
 use Mediatis\FormFieldnames\Service\FieldNameService;
 use Mediatis\FormFieldnames\Service\FormDefinitionService;
-use Mediatis\FormFieldnames\Tests\Unit\Fixtures\GeneratorFactory;
+use Mediatis\FormFieldnames\Tests\Unit\Fixtures\CreatesFieldNameGeneratorTrait;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\MockObject\Stub;
@@ -17,6 +17,8 @@ use TYPO3\TestingFramework\Core\Unit\UnitTestCase;
 
 final class FieldNameServiceTest extends UnitTestCase
 {
+    use CreatesFieldNameGeneratorTrait;
+
     private const PERSISTENCE_IDENTIFIER = '1:/form_definitions/test.form.yaml';
 
     /**
@@ -320,7 +322,7 @@ final class FieldNameServiceTest extends UnitTestCase
         $configurationService = $this->createStub(ConfigurationService::class);
         $configurationService->method('getPrototypeConfiguration')->willReturn($prototype);
 
-        return new FieldNameService($formDefinitionService, GeneratorFactory::create(), $configurationService);
+        return new FieldNameService($formDefinitionService, $this->createFieldNameGenerator(), $configurationService);
     }
 
     /**

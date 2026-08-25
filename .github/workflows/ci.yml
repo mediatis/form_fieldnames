@@ -35,7 +35,7 @@ jobs:
           path: ~/.cache/composer
           restore-keys: "php${{ matrix.php_version }}-composer-\n"
       - name: 'Install Composer dependencies'
-        run: "composer require typo3/cms-core ^${{ matrix.typo3_version }} --no-progress\ncomposer install --no-progress\n"
+        run: "if [ \"${{ matrix.typo3_version }}\" = \"12.4\" ]; then composer remove --dev saschaegerer/phpstan-typo3 --no-update --no-interaction; fi # saschaegerer/phpstan-typo3 supports TYPO3 13 and up only\ncomposer require typo3/cms-core ^${{ matrix.typo3_version }} --no-progress\ncomposer install --no-progress\n"
       - name: 'Run command'
         run: "composer ci:static\n"
   code-tests:
@@ -53,7 +53,7 @@ jobs:
         uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # 2.37.2
         with:
           php-version: '${{ matrix.php_version }}'
-          coverage: none
+          coverage: pcov
           tools: 'composer:v2.4'
           extensions: mysqli
       - name: 'Show Composer version'
@@ -67,7 +67,7 @@ jobs:
           path: ~/.cache/composer
           restore-keys: "php${{ matrix.php_version }}-composer-\n"
       - name: 'Install Composer dependencies'
-        run: "composer require typo3/cms-core ^${{ matrix.typo3_version }} --no-progress\ncomposer install --no-progress\n"
+        run: "if [ \"${{ matrix.typo3_version }}\" = \"12.4\" ]; then composer remove --dev saschaegerer/phpstan-typo3 --no-update --no-interaction; fi # saschaegerer/phpstan-typo3 supports TYPO3 13 and up only\ncomposer require typo3/cms-core ^${{ matrix.typo3_version }} --no-progress\ncomposer install --no-progress\n"
       - name: 'Start MySQL'
         run: 'sudo /etc/init.d/mysql start'
       - run: "export typo3DatabaseName=\"$DB_DATABASE\";\nexport typo3DatabaseHost=\"$DB_HOST\";\nexport typo3DatabaseUsername=\"$DB_USER\";\nexport typo3DatabasePassword=\"$DB_PASSWORD\";\ncomposer ci:coverage\n"
