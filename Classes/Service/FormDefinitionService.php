@@ -41,7 +41,7 @@ class FormDefinitionService
     private const NO_OVERRIDES = ['formDefinitionOverrides' => []];
 
     /**
-     * @var ?array{formSettings: array<string,mixed>, typoScriptSettings: array<string,mixed>}
+     * @var ?array<string,mixed>
      */
     private ?array $formSettings = null;
 
@@ -66,11 +66,11 @@ class FormDefinitionService
             return $this->buildSummariesFromArrays($this->formPersistenceManager->listForms());
         }
 
-        $settings = $this->getFormSettings();
+        $formSettings = $this->getFormSettings();
 
         if ($major === 13) {
             // @phpstan-ignore-next-line TYPO3 version switch
-            return $this->buildSummariesFromArrays($this->formPersistenceManager->listForms($settings['formSettings']));
+            return $this->buildSummariesFromArrays($this->formPersistenceManager->listForms($formSettings));
         }
 
         // v14+: listForms() requires a SearchCriteria and returns FormMetadata objects.
@@ -81,7 +81,7 @@ class FormDefinitionService
         // @phpstan-ignore-next-line TYPO3 version switch
         $searchCriteria = new $searchCriteriaClass();
         // @phpstan-ignore-next-line TYPO3 version switch
-        $formMetadataList = $this->formPersistenceManager->listForms($settings['formSettings'], $searchCriteria);
+        $formMetadataList = $this->formPersistenceManager->listForms($formSettings, $searchCriteria);
 
         $summaries = [];
         foreach ($formMetadataList as $formMetadata) {
@@ -126,9 +126,8 @@ class FormDefinitionService
                 // @phpstan-ignore-next-line TYPO3 version switch
                 $formDefinition = $this->formPersistenceManager->load($persistenceIdentifier);
             } elseif ($major === 13) {
-                $settings = $this->getFormSettings();
                 // @phpstan-ignore-next-line TYPO3 version switch
-                $formDefinition = $this->formPersistenceManager->load($persistenceIdentifier, $settings['formSettings'], self::NO_OVERRIDES);
+                $formDefinition = $this->formPersistenceManager->load($persistenceIdentifier, $this->getFormSettings(), self::NO_OVERRIDES);
             } else {
                 // v14+: the formSettings parameter was removed.
                 // @phpstan-ignore-next-line TYPO3 version switch
@@ -161,9 +160,8 @@ class FormDefinitionService
         }
 
         // v14 added an optional storage location parameter, so the v13 call covers both.
-        $settings = $this->getFormSettings();
         // @phpstan-ignore-next-line TYPO3 version switch
-        $this->formPersistenceManager->save($persistenceIdentifier, $formDefinition, $settings['formSettings']);
+        $this->formPersistenceManager->save($persistenceIdentifier, $formDefinition, $this->getFormSettings());
     }
 
     /**
@@ -213,19 +211,17 @@ class FormDefinitionService
     }
 
     /**
-     * Lazily resolves the settings the FormPersistenceManager needs.
-     * On TYPO3 12 it needs none, on 13+ they come from Extbase and the form YAML configuration.
+     * Lazily resolves the persistence settings the FormPersistenceManager needs.
+     * TYPO3 12 takes none; 13 and up build them from the form YAML configuration, which
+     * is in turn resolved from TypoScript.
      *
-     * @return array{formSettings: array<string,mixed>, typoScriptSettings: array<string,mixed>}
+     * @return array<string,mixed>
      */
     protected function getFormSettings(): array
     {
         if ($this->formSettings === null) {
             if ($this->getMajorVersion() <= 12) {
-                $this->formSettings = [
-                    'formSettings' => [],
-                    'typoScriptSettings' => [],
-                ];
+                $this->formSettings = [];
             } else {
                 $typoScriptSettings = BackendRequestContext::ensure(
                     fn (): array => $this->extbaseConfigurationManager->getConfiguration(
@@ -235,14 +231,7 @@ class FormDefinitionService
                 );
                 // @phpstan-ignore-next-line TYPO3 version switch
                 $formSettings = $this->extFormConfigurationManager->getYamlConfiguration($typoScriptSettings, false);
-                $this->formSettings = [
-                    'formSettings' => [
-                        'persistenceManager' => $formSettings['persistenceManager'] ?? [],
-                    ],
-                    'typoScriptSettings' => [
-                        'formDefinitionOverrides' => $typoScriptSettings['formDefinitionOverrides'] ?? [],
-                    ],
-                ];
+                $this->formSettings = ['persistenceManager' => $formSettings['persistenceManager'] ?? []];
             }
         }
 
