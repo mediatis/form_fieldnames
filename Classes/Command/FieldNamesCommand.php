@@ -70,7 +70,7 @@ class FieldNamesCommand extends Command
         $persistenceIdentifier = is_string($persistenceIdentifier) ? $persistenceIdentifier : null;
 
         if ($input->getOption('apply') === true) {
-            return $this->apply($io, $persistenceIdentifier);
+            return $this->apply($io, $persistenceIdentifier, $input->isInteractive());
         }
 
         return $this->report($io, $persistenceIdentifier, $output->isVerbose());
@@ -114,10 +114,26 @@ class FieldNamesCommand extends Command
         return Command::SUCCESS;
     }
 
-    protected function apply(SymfonyStyle $io, ?string $persistenceIdentifier): int
+    protected function apply(SymfonyStyle $io, ?string $persistenceIdentifier, bool $interactive): int
     {
+        if ($persistenceIdentifier === null && $interactive) {
+            $io->warning('This writes field names into every form definition of the installation.');
+            if (!$io->confirm('Continue?', false)) {
+                $io->writeln('Aborted, nothing was written.');
+
+                return Command::SUCCESS;
+            }
+        }
+
         if ($persistenceIdentifier !== null) {
-            $results = [$this->fieldNameService->migrate($persistenceIdentifier)];
+            $result = $this->fieldNameService->migrate($persistenceIdentifier);
+            if (!$result instanceof FormMigrationResult) {
+                $io->error(sprintf('No form found for "%s".', $persistenceIdentifier));
+
+                return Command::FAILURE;
+            }
+
+            $results = [$result];
         } else {
             $results = array_values($this->fieldNameService->migrateAll());
         }
@@ -202,27 +218,24 @@ class FieldNamesCommand extends Command
 
     protected function renderMigrationResult(SymfonyStyle $io, FormMigrationResult $result): void
     {
-        if ($result->skippedReason !== null) {
-            $io->writeln(sprintf(
-                '<comment>SKIP</comment> %s: %s',
-                $result->persistenceIdentifier,
-                $result->skippedReason
-            ));
-
-            return;
-        }
-
-        if ($result->appliedNames === []) {
+        if ($result->skippedReason === null && $result->appliedNames === [] && $result->problems === []) {
             return;
         }
 
         $io->section($result->persistenceIdentifier);
-        $rows = [];
-        foreach ($result->appliedNames as $elementIdentifier => $name) {
-            $rows[] = [$elementIdentifier, $name];
+
+        if ($result->skippedReason !== null) {
+            $io->writeln('<comment>SKIP</comment> ' . $result->skippedReason);
         }
 
-        $io->table(['Element', 'Name'], $rows);
+        if ($result->appliedNames !== []) {
+            $rows = [];
+            foreach ($result->appliedNames as $elementIdentifier => $name) {
+                $rows[] = [$elementIdentifier, $name];
+            }
+
+            $io->table(['Element', 'Name'], $rows);
+        }
 
         foreach ($result->problems as $problem) {
             $io->warning($problem);

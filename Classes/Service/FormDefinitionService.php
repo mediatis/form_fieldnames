@@ -21,12 +21,25 @@ use TYPO3\CMS\Form\Mvc\Persistence\FormPersistenceManagerInterface;
  * objects instead of arrays. This service hides those differences, so that
  * everything built on top of it works unchanged on TYPO3 12, 13 and 14.
  *
- * The definitions are handed out and taken back exactly as TYPO3 stores them.
- * Nothing is added to them, so that a load/save round trip cannot introduce
- * keys the form editor never wrote.
+ * Definitions are read as they are stored: the TypoScript overrides that TYPO3 merges
+ * in for rendering are kept out of the load path, exactly as FormEditorController does,
+ * so that what is analysed is what the form editor shows. TYPO3 12 has no way to opt
+ * out - its persistence manager resolves the overrides itself - so on that version a
+ * definition may arrive with them merged in, the same way the core form editor gets it.
+ *
+ * The core API this builds on - FormPersistenceManagerInterface, ext:form's
+ * ConfigurationManagerInterface and FormMetadata - is marked @internal, so it can
+ * change between TYPO3 releases without a deprecation period.
  */
 class FormDefinitionService
 {
+    /**
+     * Passed to load() instead of the resolved overrides. TYPO3 merges
+     * formDefinitionOverrides into the definition it returns, and a definition that
+     * carries them must never be written back to storage.
+     */
+    private const NO_OVERRIDES = ['formDefinitionOverrides' => []];
+
     /**
      * @var ?array{formSettings: array<string,mixed>, typoScriptSettings: array<string,mixed>}
      */
@@ -115,20 +128,24 @@ class FormDefinitionService
             } elseif ($major === 13) {
                 $settings = $this->getFormSettings();
                 // @phpstan-ignore-next-line TYPO3 version switch
-                $formDefinition = $this->formPersistenceManager->load($persistenceIdentifier, $settings['formSettings'], $settings['typoScriptSettings']);
+                $formDefinition = $this->formPersistenceManager->load($persistenceIdentifier, $settings['formSettings'], self::NO_OVERRIDES);
             } else {
                 // v14+: the formSettings parameter was removed.
-                $settings = $this->getFormSettings();
                 // @phpstan-ignore-next-line TYPO3 version switch
-                $formDefinition = $this->formPersistenceManager->load($persistenceIdentifier, $settings['typoScriptSettings']);
+                $formDefinition = $this->formPersistenceManager->load($persistenceIdentifier, self::NO_OVERRIDES);
             }
         } catch (Exception) {
-            // v12 reports a missing form through exists(), v13+ throw instead.
-            // Unparsable YAML surfaces here as well.
+            // A missing file or storage: v12 reports it through exists(), v13+ throw.
             return null;
         }
 
-        return $formDefinition === [] ? null : $formDefinition;
+        // Broken YAML does not throw. Every version catches it internally and returns
+        // a stub carrying the parse error as its label, flagged as invalid.
+        if ($formDefinition === [] || ($formDefinition['invalid'] ?? false) === true) {
+            return null;
+        }
+
+        return $formDefinition;
     }
 
     /**

@@ -168,6 +168,22 @@ final class FieldNameServiceTest extends UnitTestCase
     }
 
     #[Test]
+    public function formIdentifierUsedTwiceIsReportedEvenWhenAllNamesAreSet(): void
+    {
+        $formDefinitionService = $this->stubFormDefinitionService(
+            $this->buildForm([$this->element('Text', 'text-1', 'Vorname', 'vorname')]),
+            $this->summary(duplicateIdentifier: true)
+        );
+
+        $analysis = $this->createSubject($formDefinitionService)->analyse(self::PERSISTENCE_IDENTIFIER);
+
+        self::assertNotNull($analysis);
+        self::assertFalse($analysis->hasProposals());
+        self::assertCount(1, $analysis->problems);
+        self::assertStringContainsString('used by more than one form', $analysis->problems[0]);
+    }
+
+    #[Test]
     public function invalidFormIsReportedWithoutBeingLoaded(): void
     {
         $formDefinitionService = $this->createMock(FormDefinitionService::class);
@@ -301,15 +317,13 @@ final class FieldNameServiceTest extends UnitTestCase
     }
 
     #[Test]
-    public function migrationOfAnUnknownFormIsSkipped(): void
+    public function migrationOfAnUnknownFormReturnsNull(): void
     {
         $formDefinitionService = $this->createMock(FormDefinitionService::class);
         $formDefinitionService->method('listForms')->willReturn([]);
         $formDefinitionService->expects(self::never())->method('save');
 
-        $result = $this->createSubject($formDefinitionService)->migrate('1:/nope.form.yaml');
-
-        self::assertSame('Form not found.', $result->skippedReason);
+        self::assertNull($this->createSubject($formDefinitionService)->migrate('1:/nope.form.yaml'));
     }
 
     /**
@@ -353,8 +367,11 @@ final class FieldNameServiceTest extends UnitTestCase
         return $formDefinitionService;
     }
 
-    private function summary(bool $readOnly = false, bool $invalid = false): FormSummary
-    {
+    private function summary(
+        bool $readOnly = false,
+        bool $invalid = false,
+        bool $duplicateIdentifier = false,
+    ): FormSummary {
         return new FormSummary(
             self::PERSISTENCE_IDENTIFIER,
             'test',
@@ -362,7 +379,7 @@ final class FieldNameServiceTest extends UnitTestCase
             '1:/form_definitions/',
             $readOnly,
             $invalid,
-            false,
+            $duplicateIdentifier,
         );
     }
 

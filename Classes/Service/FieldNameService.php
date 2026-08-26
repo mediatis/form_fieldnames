@@ -65,14 +65,11 @@ class FieldNameService
         return !$summary instanceof FormSummary ? null : $this->analyseForm($summary);
     }
 
-    public function migrate(string $persistenceIdentifier): FormMigrationResult
+    public function migrate(string $persistenceIdentifier): ?FormMigrationResult
     {
         $summary = $this->findSummary($persistenceIdentifier);
-        if (!$summary instanceof FormSummary) {
-            return FormMigrationResult::skipped($persistenceIdentifier, 'Form not found.', []);
-        }
 
-        return $this->migrateForm($summary);
+        return $summary instanceof FormSummary ? $this->migrateForm($summary) : null;
     }
 
     /**
@@ -108,6 +105,15 @@ class FieldNameService
     protected function analyseFormDefinition(FormSummary $summary, array $formDefinition): FormAnalysis
     {
         $problems = [];
+        if ($summary->duplicateIdentifier) {
+            $problems[] = sprintf(
+                'The form identifier "%s" is used by more than one form. '
+                . 'Field names are unique per form, but anything that addresses a form by its '
+                . 'identifier cannot tell these apart.',
+                $summary->identifier
+            );
+        }
+
         $prototypeName = (string)($formDefinition['prototypeName'] ?? 'standard');
         $supportedTypes = $this->getSupportedElementTypes($prototypeName);
         if ($supportedTypes === []) {

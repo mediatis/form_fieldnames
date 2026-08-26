@@ -152,6 +152,59 @@ final class FormDefinitionServiceTest extends UnitTestCase
     }
 
     #[Test]
+    public function loadReturnsNullForADefinitionCoreFlaggedAsInvalid(): void
+    {
+        // Broken YAML never throws: every version catches it and returns this stub.
+        $persistenceManager = $this->createStub(FormPersistenceManagerInterface::class);
+        if (method_exists($persistenceManager, 'exists')) {
+            $persistenceManager->method('exists')->willReturn(true);
+        }
+
+        $persistenceManager->method('load')->willReturn([
+            'type' => 'Form',
+            'identifier' => self::PERSISTENCE_IDENTIFIER,
+            'label' => 'Unable to parse the YAML file',
+            'invalid' => true,
+        ]);
+
+        self::assertNull($this->createSubject($persistenceManager)->load(self::PERSISTENCE_IDENTIFIER));
+    }
+
+    #[Test]
+    public function loadNeverPassesTypoScriptOverridesToThePersistenceManager(): void
+    {
+        $capturedArguments = [];
+        $persistenceManager = $this->createMock(FormPersistenceManagerInterface::class);
+        if (method_exists($persistenceManager, 'exists')) {
+            $persistenceManager->method('exists')->willReturn(true);
+        }
+
+        $persistenceManager->expects(self::once())->method('load')->willReturnCallback(
+            function (mixed ...$arguments) use (&$capturedArguments): array {
+                $capturedArguments = $arguments;
+
+                return ['identifier' => 'test'];
+            }
+        );
+
+        $subject = $this->createSubject($persistenceManager, [
+            'formDefinitionOverrides' => ['test' => ['label' => 'Overridden at runtime']],
+        ]);
+        $subject->load(self::PERSISTENCE_IDENTIFIER);
+
+        $nonEmptyOverrides = [];
+        foreach ($capturedArguments as $argument) {
+            if (is_array($argument) && ($argument['formDefinitionOverrides'] ?? []) !== []) {
+                $nonEmptyOverrides[] = $argument['formDefinitionOverrides'];
+            }
+        }
+
+        // Empty on 13 and 14, absent on 12: the analysis has to see what is stored,
+        // not what TypoScript turns the form into for rendering.
+        self::assertSame([], $nonEmptyOverrides);
+    }
+
+    #[Test]
     public function saveIsDelegatedToThePersistenceManager(): void
     {
         $persistenceManager = $this->createMock(FormPersistenceManagerInterface::class);
@@ -179,10 +232,15 @@ final class FormDefinitionServiceTest extends UnitTestCase
         self::assertFalse($subject->isWritable('1:/form_definitions/unknown.form.yaml'));
     }
 
-    private function createSubject(?FormPersistenceManagerInterface $persistenceManager = null): TestableFormDefinitionService
-    {
+    /**
+     * @param array<string,mixed> $typoScriptSettings
+     */
+    private function createSubject(
+        ?FormPersistenceManagerInterface $persistenceManager = null,
+        array $typoScriptSettings = [],
+    ): TestableFormDefinitionService {
         $extbaseConfigurationManager = $this->createStub(ExtbaseConfigurationManagerInterface::class);
-        $extbaseConfigurationManager->method('getConfiguration')->willReturn([]);
+        $extbaseConfigurationManager->method('getConfiguration')->willReturn($typoScriptSettings);
 
         $formConfigurationManager = $this->createStub(ExtFormConfigurationManagerInterface::class);
         if (method_exists($formConfigurationManager, 'getYamlConfiguration')) {

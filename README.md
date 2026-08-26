@@ -59,8 +59,9 @@ name together with the name that would be generated for it, and it flags problem
 cannot be resolved automatically — forms in read-only storage, unparsable definitions,
 and names that were set by hand but collide with each other.
 
-Because it never writes, it also works as a recurring health check: run it to see
-whether any form has drifted.
+Because it never writes, it is safe to run at any time to see where an installation
+stands. It always exits successfully, though — it is a report to read, not a check to
+automate.
 
 Restrict it to a single form with `--form`:
 
