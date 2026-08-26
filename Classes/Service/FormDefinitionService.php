@@ -27,6 +27,10 @@ use TYPO3\CMS\Form\Mvc\Persistence\FormPersistenceManagerInterface;
  * out - its persistence manager resolves the overrides itself - so on that version a
  * definition may arrive with them merged in, the same way the core form editor gets it.
  *
+ * AfterFormDefinitionLoadedEvent listeners can modify a definition on every version.
+ * Core dispatches that event on every load, including the form editor's, with no way to
+ * opt out, so a definition changed by a listener is what the editor saves as well.
+ *
  * The core API this builds on - FormPersistenceManagerInterface, ext:form's
  * ConfigurationManagerInterface and FormMetadata - is marked @internal, so it can
  * change between TYPO3 releases without a deprecation period.
