@@ -10,6 +10,9 @@ use PHPUnit\Framework\Attributes\Test;
 use ReflectionMethod;
 use ReflectionNamedType;
 use RuntimeException;
+use TYPO3\CMS\Core\Http\ServerRequest;
+use TYPO3\CMS\Core\Http\Uri;
+use TYPO3\CMS\Core\Information\Typo3Version;
 use TYPO3\CMS\Extbase\Configuration\ConfigurationManagerInterface as ExtbaseConfigurationManagerInterface;
 use TYPO3\CMS\Form\Mvc\Configuration\ConfigurationManagerInterface as ExtFormConfigurationManagerInterface;
 use TYPO3\CMS\Form\Mvc\Persistence\FormPersistenceManagerInterface;
@@ -171,7 +174,7 @@ final class FormDefinitionServiceTest extends UnitTestCase
     }
 
     #[Test]
-    public function loadNeverPassesTypoScriptOverridesToThePersistenceManager(): void
+    public function loadWithoutARequestPassesNoOverrides(): void
     {
         $capturedArguments = [];
         $persistenceManager = $this->createMock(FormPersistenceManagerInterface::class);
@@ -199,9 +202,40 @@ final class FormDefinitionServiceTest extends UnitTestCase
             }
         }
 
-        // Empty on 13 and 14, absent on 12: the analysis has to see what is stored,
-        // not what TypoScript turns the form into for rendering.
+        // Empty on 13 and 14, absent on 12: without a context there is nothing to
+        // resolve overrides against, so none are passed.
         self::assertSame([], $nonEmptyOverrides);
+    }
+
+    #[Test]
+    public function loadWithARequestPassesTheOverridesThatApplyInThatContext(): void
+    {
+        if ((new Typo3Version())->getMajorVersion() <= 12) {
+            self::markTestSkipped('TYPO3 12 resolves the overrides inside the persistence manager.');
+        }
+
+        $overrides = ['test' => ['label' => 'Overridden for this page']];
+        $capturedArguments = [];
+        $persistenceManager = $this->createMock(FormPersistenceManagerInterface::class);
+        $persistenceManager->expects(self::once())->method('load')->willReturnCallback(
+            function (mixed ...$arguments) use (&$capturedArguments): array {
+                $capturedArguments = $arguments;
+
+                return ['identifier' => 'test'];
+            }
+        );
+
+        $subject = $this->createSubject($persistenceManager, ['formDefinitionOverrides' => $overrides]);
+        $subject->load(self::PERSISTENCE_IDENTIFIER, new ServerRequest(new Uri('https://example.com/contact')));
+
+        $passedOverrides = [];
+        foreach ($capturedArguments as $argument) {
+            if (is_array($argument) && isset($argument['formDefinitionOverrides'])) {
+                $passedOverrides[] = $argument['formDefinitionOverrides'];
+            }
+        }
+
+        self::assertSame([$overrides], $passedOverrides);
     }
 
     #[Test]

@@ -16,10 +16,8 @@ use TYPO3\CMS\Form\Domain\Configuration\ConfigurationService;
 /**
  * Reports which form elements are missing a field name, and fills them in.
  *
- * Analysis never changes anything and is the basis for both entry points: the
- * CLI command prints it, a UI renders it. Migration recomputes the analysis
- * rather than applying a previously computed plan, so a stale view cannot write
- * the wrong names.
+ * Analysis never changes anything. Migration recomputes it rather than applying a
+ * previously computed plan, so a stale view cannot write the wrong names.
  *
  * Existing names are never overwritten. An element that already has a name is
  * left alone, which also makes repeated runs a no-op.

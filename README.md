@@ -57,7 +57,8 @@ vendor/bin/typo3 form:fieldnames
 Reporting is the default, so this changes nothing. It lists every element without a
 name together with the name that would be generated for it, and it flags problems that
 cannot be resolved automatically — forms in read-only storage, unparsable definitions,
-and names that were set by hand but collide with each other.
+names that were set by hand but collide with each other, and form identifiers used by
+more than one form.
 
 Because it never writes, it is safe to run at any time to see where an installation
 stands. It always exits successfully, though — it is a report to read, not a check to
@@ -76,6 +77,8 @@ vendor/bin/typo3 form:fieldnames --apply
 ```
 
 This writes the proposed names into the form definitions and reports what it changed.
+Without `--form` it asks for confirmation first, because it writes to every form in the
+installation; `--no-interaction` skips the question.
 
 Two guarantees hold: **an existing name is never overwritten**, and running the command
 twice changes nothing the second time. Review the generated names afterwards — they are

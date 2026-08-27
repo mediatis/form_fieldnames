@@ -7,6 +7,7 @@ namespace Mediatis\FormFieldnames\Service;
 use Exception;
 use Mediatis\FormFieldnames\Dto\FormSummary;
 use Mediatis\FormFieldnames\Utility\BackendRequestContext;
+use Psr\Http\Message\ServerRequestInterface;
 use TYPO3\CMS\Core\Information\Typo3Version;
 use TYPO3\CMS\Extbase\Configuration\ConfigurationManagerInterface as ExtbaseConfigurationManagerInterface;
 use TYPO3\CMS\Form\Domain\DTO\SearchCriteria;
@@ -21,11 +22,15 @@ use TYPO3\CMS\Form\Mvc\Persistence\FormPersistenceManagerInterface;
  * objects instead of arrays. This service hides those differences, so that
  * everything built on top of it works unchanged on TYPO3 12, 13 and 14.
  *
- * Definitions are read as they are stored: the TypoScript overrides that TYPO3 merges
- * in for rendering are kept out of the load path, exactly as FormEditorController does,
- * so that what is analysed is what the form editor shows. TYPO3 12 has no way to opt
- * out - its persistence manager resolves the overrides itself - so on that version a
- * definition may arrive with them merged in, the same way the core form editor gets it.
+ * load() returns a definition as it is stored unless a request is passed. TypoScript
+ * formDefinitionOverrides are per page and site, so they can only be resolved for a
+ * context: pass the request of the page the form is rendered on to get the definition
+ * as that page renders it, pass nothing to get the stored one. TYPO3 14 gates its own
+ * merge on the same argument, which is why the request is handed on there.
+ *
+ * A definition loaded with overrides must not be saved, or the overrides become part of
+ * the file. TYPO3 12 gives no choice - its persistence manager resolves and merges them
+ * itself on every load, exactly as the core form editor gets them.
  *
  * AfterFormDefinitionLoadedEvent listeners can modify a definition on every version.
  * Core dispatches that event on every load, including the form editor's, with no way to
@@ -38,9 +43,7 @@ use TYPO3\CMS\Form\Mvc\Persistence\FormPersistenceManagerInterface;
 class FormDefinitionService
 {
     /**
-     * Passed to load() instead of the resolved overrides. TYPO3 merges
-     * formDefinitionOverrides into the definition it returns, and a definition that
-     * carries them must never be written back to storage.
+     * The empty override set, used when no request defines a context to resolve in.
      */
     private const NO_OVERRIDES = ['formDefinitionOverrides' => []];
 
@@ -116,7 +119,7 @@ class FormDefinitionService
      *
      * @return ?array<string,mixed>
      */
-    public function load(string $persistenceIdentifier): ?array
+    public function load(string $persistenceIdentifier, ?ServerRequestInterface $request = null): ?array
     {
         $major = $this->getMajorVersion();
 
@@ -131,11 +134,12 @@ class FormDefinitionService
                 $formDefinition = $this->formPersistenceManager->load($persistenceIdentifier);
             } elseif ($major === 13) {
                 // @phpstan-ignore-next-line TYPO3 version switch
-                $formDefinition = $this->formPersistenceManager->load($persistenceIdentifier, $this->getFormSettings(), self::NO_OVERRIDES);
+                $formDefinition = $this->formPersistenceManager->load($persistenceIdentifier, $this->getFormSettings(), $this->getFormDefinitionOverrides($request));
             } else {
-                // v14+: the formSettings parameter was removed.
+                // v14+: the formSettings parameter was removed and the merge only happens
+                // when a request is given, so the request has to be handed on as well.
                 // @phpstan-ignore-next-line TYPO3 version switch
-                $formDefinition = $this->formPersistenceManager->load($persistenceIdentifier, self::NO_OVERRIDES);
+                $formDefinition = $this->formPersistenceManager->load($persistenceIdentifier, $this->getFormDefinitionOverrides($request), $request);
             }
         } catch (Exception) {
             // A missing file or storage: v12 reports it through exists(), v13+ throw.
@@ -171,9 +175,10 @@ class FormDefinitionService
     /**
      * Whether the storage behind this identifier accepts writes.
      *
-     * Forms provided by extensions are read-only. Callers that already hold a
-     * FormSummary should use its readOnly property instead, because this method
-     * has to list all forms again.
+     * TYPO3 reports this per form: extension-provided forms are read-only unless the
+     * installation allows saving to extension paths. Callers that already hold a
+     * FormSummary should read its readOnly property instead, because this method has to
+     * list all forms again.
      */
     public function isWritable(string $persistenceIdentifier): bool
     {
@@ -212,6 +217,28 @@ class FormDefinitionService
         }
 
         return $summaries;
+    }
+
+    /**
+     * The formDefinitionOverrides that apply in the given context, or none without one.
+     *
+     * @return array<string,mixed>
+     */
+    protected function getFormDefinitionOverrides(?ServerRequestInterface $request): array
+    {
+        if (!$request instanceof ServerRequestInterface) {
+            return self::NO_OVERRIDES;
+        }
+
+        $typoScriptSettings = BackendRequestContext::withRequest(
+            $request,
+            fn (): array => $this->extbaseConfigurationManager->getConfiguration(
+                ExtbaseConfigurationManagerInterface::CONFIGURATION_TYPE_SETTINGS,
+                'form'
+            )
+        );
+
+        return ['formDefinitionOverrides' => $typoScriptSettings['formDefinitionOverrides'] ?? []];
     }
 
     /**
