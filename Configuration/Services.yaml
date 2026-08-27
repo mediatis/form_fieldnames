@@ -1,0 +1,18 @@
+services:
+  _defaults:
+    autowire: true
+    autoconfigure: true
+    public: false
+
+  Mediatis\FormFieldnames\:
+    resource: '../Classes/*'
+    exclude: '../Classes/Dto/*'
+
+  Mediatis\FormFieldnames\Service\LabelResolverInterface: '@Mediatis\FormFieldnames\Service\LanguageFileLabelResolver'
+
+  Mediatis\FormFieldnames\Command\FieldNamesCommand:
+    tags:
+      - name: console.command
+        command: 'form:fieldnames'
+        description: 'Report form elements without a field name, and fill them in with --apply'
+        schedulable: false
